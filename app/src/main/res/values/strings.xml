@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">LocationBird</string>
     <string name="title_activity_maps">MapsActivity</string>
+    <string name="mark_location">Mark Location</string>
 </resources>

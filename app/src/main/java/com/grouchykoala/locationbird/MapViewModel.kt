@@ -1,10 +1,11 @@
 package com.grouchykoala.locationbird
 
-import android.location.Location
 import androidx.lifecycle.ViewModel
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.Marker
 
 class MapViewModel: ViewModel() {
-
-    var currentLocation: Location? = null
-
+    var carLocation: CarLocation? = null
 }
+
+data class CarLocation(var marker: Marker?, val coordinates: LatLng)
