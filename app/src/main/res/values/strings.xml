@@ -1,5 +1,9 @@
-<resources>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="app_name">LocationBird</string>
     <string name="title_activity_maps">MapsActivity</string>
     <string name="mark_location">Mark Location</string>
+    <plurals name="distance_from_pin">
+        <item quantity="one">You are parked <xliff:g id="distance" example="1">%1$d</xliff:g> mile away.</item>
+        <item quantity="other">You are parked <xliff:g id="distance" example="4">%1$d</xliff:g> miles away.</item>
+    </plurals>
 </resources>
