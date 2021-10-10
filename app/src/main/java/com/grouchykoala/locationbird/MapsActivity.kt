@@ -30,7 +30,10 @@ class MapsActivity : AppCompatActivity() {
         if (permissions.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false)
             || permissions.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false)
         ) {
+            model.requestingLocationUpdates = true
             enableUserLocation()
+        } else {
+            model.requestingLocationUpdates = false
         }
     }
 
@@ -60,7 +63,7 @@ class MapsActivity : AppCompatActivity() {
                     )
                     val marker = mMap.addMarker(MarkerOptions().position(coordinates))
 
-                    model.carLocation = CarLocation(marker, coordinates)
+                    model.carLocation = CarLocation(marker, model.locationFromCoordinates(coordinates), coordinates)
                 }
             }
 
@@ -71,10 +74,12 @@ class MapsActivity : AppCompatActivity() {
 
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult?) {
-                locationResult ?: return
-                for (location in locationResult.locations){
-
-                }
+                binding.distanceIndicator.text = locationResult ?.let { result ->
+                    val distance = model.calculateDistance(result.lastLocation)
+                    distance?.let {
+                        resources.getQuantityString(R.plurals.distance_from_pin, it.toInt())
+                    } ?: resources.getString(R.string.distance_placeholder)
+                } ?: resources.getString(R.string.distance_error_message)
             }
         }
 
@@ -130,7 +135,7 @@ class MapsActivity : AppCompatActivity() {
                     val coordinates = LatLng(it.latitude, it.longitude)
                     val marker = mMap.addMarker(MarkerOptions().position(coordinates))
 
-                    model.carLocation = CarLocation(marker, coordinates)
+                    model.carLocation = CarLocation(marker, it, coordinates)
 
                     val editor = getPreferences(MODE_PRIVATE).edit()
                     editor.putLong(LAT_KEY, coordinates.latitude.toRawBits())

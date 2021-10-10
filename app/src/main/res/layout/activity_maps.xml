@@ -7,17 +7,19 @@
     android:layout_height="match_parent"
     >
     <TextView
+        android:id="@+id/distance_indicator"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
         android:layout_marginTop="16dp"
         map:layout_constraintBottom_toBottomOf="@+id/map"
-        map:layout_constraintEnd_toEndOf="parent"
-        map:layout_constraintHorizontal_bias="0.0"
-        map:layout_constraintStart_toStartOf="parent"
+        map:layout_constraintEnd_toEndOf="@id/map"
+        map:layout_constraintStart_toStartOf="@id/map"
         map:layout_constraintTop_toTopOf="@+id/map"
+        map:layout_constraintHorizontal_bias="0.0"
         map:layout_constraintVertical_bias="0.0"
-        tools:text="You are parked 2.5 miles away" />
+        android:text="@string/distance_placeholder"
+        />
 
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/map"
