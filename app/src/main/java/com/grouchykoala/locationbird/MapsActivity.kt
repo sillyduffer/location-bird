@@ -4,23 +4,29 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Bundle
+import android.os.Looper
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.grouchykoala.locationbird.databinding.ActivityMapsBinding
+import java.text.NumberFormat
+import kotlin.math.roundToInt
 
 class MapsActivity : AppCompatActivity() {
 
     private lateinit var mMap: GoogleMap
     private lateinit var binding: ActivityMapsBinding
     private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private lateinit var locationCallback: LocationCallback
 
     private val model: MapViewModel by viewModels()
     private val locationPermissionRequest = registerForActivityResult(
@@ -29,7 +35,11 @@ class MapsActivity : AppCompatActivity() {
         if (permissions.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false)
             || permissions.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false)
         ) {
+            model.requestingLocationUpdates = true
+            startLocationUpdates()
             enableUserLocation()
+        } else {
+            model.requestingLocationUpdates = false
         }
     }
 
@@ -59,7 +69,7 @@ class MapsActivity : AppCompatActivity() {
                     )
                     val marker = mMap.addMarker(MarkerOptions().position(coordinates))
 
-                    model.carLocation = CarLocation(marker, coordinates)
+                    model.carLocation = CarLocation(marker, model.locationFromCoordinates(coordinates), coordinates)
                 }
             }
 
@@ -68,52 +78,114 @@ class MapsActivity : AppCompatActivity() {
             }
         }
 
+        locationCallback = object : LocationCallback() {
+            override fun onLocationResult(locationResult: LocationResult?) {
+                binding.distanceIndicator.text = locationResult ?.let { result ->
+                    val distanceAndUnits = model.calculateDistanceAndUnits(result.lastLocation)
+                    distanceAndUnits?.let {
+                        when (it.units) {
+                            UnitType.FEET -> resources.getQuantityString(
+                                R.plurals.distance_from_pin_feet,
+                                it.distance.roundToInt(),
+                                NumberFormat.getInstance().format(it.distance)
+                            )
+                            UnitType.MILES -> resources.getQuantityString(
+                                R.plurals.distance_from_pin_miles,
+                                it.distance.roundToInt(),
+                                NumberFormat.getInstance().format(it.distance)
+                            )
+                        }
+                    } ?: resources.getString(R.string.distance_placeholder)
+                } ?: resources.getString(R.string.distance_error_message)
+            }
+        }
+
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (model.requestingLocationUpdates) startLocationUpdates()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        stopLocationUpdates()
     }
 
     private fun enableUserLocation() {
         if (ActivityCompat.checkSelfPermission(
-                this, Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
-            || ActivityCompat.checkSelfPermission(
-                this, Manifest.permission.ACCESS_COARSE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED) {
-            mMap.isMyLocationEnabled = true
-        } else {
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
             locationPermissionRequest.launch(arrayOf(
                 Manifest.permission.ACCESS_FINE_LOCATION,
                 Manifest.permission.ACCESS_COARSE_LOCATION
             ))
+            return
         }
+        mMap.isMyLocationEnabled = true
     }
 
     private fun dropPinAtCurrentLocation() {
         if (ActivityCompat.checkSelfPermission(
-                this, Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
-            || ActivityCompat.checkSelfPermission(
-                this, Manifest.permission.ACCESS_COARSE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED) {
-            fusedLocationClient.lastLocation
-                .addOnSuccessListener { location : Location? ->
-                    location?.let {
-                        model.carLocation?.marker?.remove()
-                        val coordinates = LatLng(it.latitude, it.longitude)
-                        val marker = mMap.addMarker(MarkerOptions().position(coordinates))
-
-                        model.carLocation = CarLocation(marker, coordinates)
-
-                        val editor = getPreferences(MODE_PRIVATE).edit()
-                        editor.putLong(LAT_KEY, coordinates.latitude.toRawBits())
-                        editor.putLong(LNG_KEY, coordinates.longitude.toRawBits())
-                        editor.apply()
-                    }
-                }
-        } else {
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
             locationPermissionRequest.launch(arrayOf(
                 Manifest.permission.ACCESS_FINE_LOCATION,
                 Manifest.permission.ACCESS_COARSE_LOCATION
             ))
+            return
         }
+        fusedLocationClient.lastLocation
+            .addOnSuccessListener { location : Location? ->
+                location?.let {
+                    model.carLocation?.marker?.remove()
+                    val coordinates = LatLng(it.latitude, it.longitude)
+                    val marker = mMap.addMarker(MarkerOptions().position(coordinates))
+
+                    model.carLocation = CarLocation(marker, it, coordinates)
+
+                    val editor = getPreferences(MODE_PRIVATE).edit()
+                    editor.putLong(LAT_KEY, coordinates.latitude.toRawBits())
+                    editor.putLong(LNG_KEY, coordinates.longitude.toRawBits())
+                    editor.apply()
+                }
+            }
+    }
+
+    private fun startLocationUpdates() {
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            locationPermissionRequest.launch(arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ))
+            return
+        }
+        fusedLocationClient.requestLocationUpdates(
+            model.getLocationRequest(),
+            locationCallback,
+            Looper.getMainLooper()
+        )
+    }
+
+    private fun stopLocationUpdates() {
+        fusedLocationClient.removeLocationUpdates(locationCallback)
     }
 
     companion object {
