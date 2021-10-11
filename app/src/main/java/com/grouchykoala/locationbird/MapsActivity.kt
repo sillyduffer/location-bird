@@ -9,12 +9,17 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import com.google.android.gms.location.*
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationResult
+import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.grouchykoala.locationbird.databinding.ActivityMapsBinding
+import java.text.NumberFormat
+import kotlin.math.roundToInt
 
 class MapsActivity : AppCompatActivity() {
 
@@ -31,6 +36,7 @@ class MapsActivity : AppCompatActivity() {
             || permissions.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false)
         ) {
             model.requestingLocationUpdates = true
+            startLocationUpdates()
             enableUserLocation()
         } else {
             model.requestingLocationUpdates = false
@@ -75,9 +81,20 @@ class MapsActivity : AppCompatActivity() {
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult?) {
                 binding.distanceIndicator.text = locationResult ?.let { result ->
-                    val distance = model.calculateDistance(result.lastLocation)
-                    distance?.let {
-                        resources.getQuantityString(R.plurals.distance_from_pin, it.toInt())
+                    val distanceAndUnits = model.calculateDistanceAndUnits(result.lastLocation)
+                    distanceAndUnits?.let {
+                        when (it.units) {
+                            UnitType.FEET -> resources.getQuantityString(
+                                R.plurals.distance_from_pin_feet,
+                                it.distance.roundToInt(),
+                                NumberFormat.getInstance().format(it.distance)
+                            )
+                            UnitType.MILES -> resources.getQuantityString(
+                                R.plurals.distance_from_pin_miles,
+                                it.distance.roundToInt(),
+                                NumberFormat.getInstance().format(it.distance)
+                            )
+                        }
                     } ?: resources.getString(R.string.distance_placeholder)
                 } ?: resources.getString(R.string.distance_error_message)
             }

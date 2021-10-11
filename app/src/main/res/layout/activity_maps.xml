@@ -8,14 +8,12 @@
     >
     <TextView
         android:id="@+id/distance_indicator"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
-        map:layout_constraintBottom_toBottomOf="@+id/map"
-        map:layout_constraintEnd_toEndOf="@id/map"
-        map:layout_constraintStart_toStartOf="@id/map"
-        map:layout_constraintTop_toTopOf="@+id/map"
+        android:padding="16dp"
+        map:layout_constraintEnd_toEndOf="parent"
+        map:layout_constraintStart_toStartOf="parent"
+        map:layout_constraintTop_toTopOf="parent"
         map:layout_constraintHorizontal_bias="0.0"
         map:layout_constraintVertical_bias="0.0"
         android:text="@string/distance_placeholder"
@@ -30,7 +28,7 @@
         map:layout_constraintBottom_toTopOf="@+id/marker_drop_button"
         map:layout_constraintEnd_toEndOf="parent"
         map:layout_constraintStart_toStartOf="parent"
-        map:layout_constraintTop_toTopOf="parent"
+        map:layout_constraintTop_toBottomOf="@id/distance_indicator"
         tools:context=".MapsActivity" />
     <Button
         android:id="@+id/marker_drop_button"

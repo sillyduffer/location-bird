@@ -3,8 +3,12 @@
     <string name="mark_location">Save my parking spot</string>
     <string name="distance_placeholder">Save your parking spot to see your distance.</string>
     <string name="distance_error_message">Unable to calculate distance.</string>
-    <plurals name="distance_from_pin">
-        <item quantity="one">You are parked <xliff:g id="distance" example="1">%1$d</xliff:g> mile away.</item>
-        <item quantity="other">You are parked <xliff:g id="distance" example="4">%1$d</xliff:g> miles away.</item>
+    <plurals name="distance_from_pin_miles">
+        <item quantity="one">You are parked <xliff:g id="distance" example="1">%1$s</xliff:g> mile away.</item>
+        <item quantity="other">You are parked <xliff:g id="distance" example="4.3">%1$s</xliff:g> miles away.</item>
+    </plurals>
+    <plurals name="distance_from_pin_feet">
+        <item quantity="one">You are parked <xliff:g id="distance" example="1">%1$s</xliff:g> foot away.</item>
+        <item quantity="other">You are parked <xliff:g id="distance" example="531.2">%1$s</xliff:g> feet away.</item>
     </plurals>
 </resources>
