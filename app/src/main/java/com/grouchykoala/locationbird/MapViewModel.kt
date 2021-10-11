@@ -17,7 +17,6 @@ class MapViewModel: ViewModel() {
             interval = 5000
             fastestInterval = 500
             priority = LocationRequest.PRIORITY_HIGH_ACCURACY
-            maxWaitTime= 100
         }
     }
 
