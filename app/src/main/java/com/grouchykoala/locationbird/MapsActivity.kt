@@ -1,8 +1,10 @@
 package com.grouchykoala.locationbird
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
+import android.net.Uri
 import android.os.Bundle
 import android.os.Looper
 import androidx.activity.result.contract.ActivityResultContracts
@@ -87,6 +89,7 @@ class MapsActivity : AppCompatActivity() {
 
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult?) {
+                model.currentApproximateLocation = locationResult?.lastLocation
                 updateDistanceIndicator(locationResult?.lastLocation)
             }
         }
@@ -182,23 +185,22 @@ class MapsActivity : AppCompatActivity() {
             ))
             return
         }
-        fusedLocationClient.lastLocation
-            .addOnSuccessListener { location : Location? ->
-                location?.let {
-                    model.carLocation?.marker?.remove()
-                    val coordinates = LatLng(it.latitude, it.longitude)
-                    val marker = mMap.addMarker(MarkerOptions().position(coordinates))
-                    updateDistanceIndicator(it)
-                    centerOnLocation()
+        fusedLocationClient.lastLocation.addOnSuccessListener { location : Location? ->
+            location?.let {
+                model.carLocation?.marker?.remove()
+                val coordinates = LatLng(it.latitude, it.longitude)
+                val marker = mMap.addMarker(MarkerOptions().position(coordinates))
+                updateDistanceIndicator(it)
+                centerOnLocation()
 
-                    model.carLocation = CarLocation(marker, it, coordinates)
+                model.carLocation = CarLocation(marker, it, coordinates)
 
-                    val editor = getPreferences(MODE_PRIVATE).edit()
-                    editor.putLong(LAT_KEY, coordinates.latitude.toRawBits())
-                    editor.putLong(LNG_KEY, coordinates.longitude.toRawBits())
-                    editor.apply()
-                }
+                val editor = getPreferences(MODE_PRIVATE).edit()
+                editor.putLong(LAT_KEY, coordinates.latitude.toRawBits())
+                editor.putLong(LNG_KEY, coordinates.longitude.toRawBits())
+                editor.apply()
             }
+        }
     }
 
     private fun clearPins() {
@@ -235,6 +237,19 @@ class MapsActivity : AppCompatActivity() {
 
     private fun stopLocationUpdates() {
         fusedLocationClient.removeLocationUpdates(locationCallback)
+    }
+
+    private fun showDrivingDirections() {
+        model.carLocation?.coordinates?.let { destination ->
+            val uri: String = model.currentApproximateLocation?.let { currentLocation ->
+                ("http://maps.google.com/maps?saddr=" + currentLocation.latitude + ","
+                        + currentLocation.longitude + "&daddr=" + destination.latitude + ","
+                        + destination.longitude)
+            } ?: ("http://maps.google.com/maps?daddr=" + destination.latitude.toString() + ","
+                    + destination.longitude)
+
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(uri)))
+        }
     }
 
     companion object {
