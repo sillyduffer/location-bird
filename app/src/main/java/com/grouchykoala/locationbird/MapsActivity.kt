@@ -79,6 +79,10 @@ class MapsActivity : AppCompatActivity() {
             binding.markerDropButton.setOnClickListener {
                 dropPinAtCurrentLocation()
             }
+
+            binding.clearMarkerButton.setOnClickListener {
+                clearPins()
+            }
         }
 
         locationCallback = object : LocationCallback() {
@@ -185,6 +189,7 @@ class MapsActivity : AppCompatActivity() {
                     val coordinates = LatLng(it.latitude, it.longitude)
                     val marker = mMap.addMarker(MarkerOptions().position(coordinates))
                     updateDistanceIndicator(it)
+                    centerOnLocation()
 
                     model.carLocation = CarLocation(marker, it, coordinates)
 
@@ -194,6 +199,16 @@ class MapsActivity : AppCompatActivity() {
                     editor.apply()
                 }
             }
+    }
+
+    private fun clearPins() {
+        model.carLocation?.marker?.remove()
+        binding.distanceIndicator.text = resources.getString(R.string.distance_placeholder)
+        model.carLocation = null
+        val editor = getPreferences(MODE_PRIVATE).edit()
+        editor.remove(LAT_KEY)
+        editor.remove(LNG_KEY)
+        editor.apply()
     }
 
     private fun startLocationUpdates() {
