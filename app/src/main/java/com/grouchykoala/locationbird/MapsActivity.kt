@@ -103,15 +103,16 @@ class MapsActivity : AppCompatActivity() {
         binding.distanceIndicator.text = location?.let {
             val distanceAndUnits = model.calculateDistanceAndUnits(location)
             distanceAndUnits?.let {
+                val roundDistance: Int = if (it.distance in 1.1..2.0) 2 else it.distance.roundToInt()
                 when (it.units) {
                     UnitType.FEET -> resources.getQuantityString(
                         R.plurals.distance_from_pin_feet,
-                        it.distance.roundToInt(),
+                        roundDistance,
                         NumberFormat.getInstance().format(it.distance)
                     )
                     UnitType.MILES -> resources.getQuantityString(
                         R.plurals.distance_from_pin_miles,
-                        it.distance.roundToInt(),
+                        roundDistance,
                         NumberFormat.getInstance().format(it.distance)
                     )
                 }
