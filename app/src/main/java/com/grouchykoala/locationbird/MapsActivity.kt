@@ -129,7 +129,7 @@ class MapsActivity : AppCompatActivity() {
         binding.distanceIndicator.text = location?.let {
             val distanceAndUnits = model.calculateDistanceAndUnits(location)
             distanceAndUnits?.let {
-                val roundDistance: Int = if (it.distance in 1.1..2.0) 2 else it.distance.roundToInt()
+                val roundDistance: Int = if (it.distance in 1.01..2.00 || it.distance in 0.01..1.00) 2 else it.distance.roundToInt()
                 when (it.units) {
                     UnitType.FEET -> resources.getQuantityString(
                         R.plurals.distance_from_pin_feet,
