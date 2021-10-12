@@ -1,10 +1,16 @@
 package com.grouchykoala.locationbird
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
+import android.net.Uri
 import android.os.Bundle
 import android.os.Looper
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -63,7 +69,7 @@ class MapsActivity : AppCompatActivity() {
                 it.marker?.remove()
                 val coordinates = LatLng(it.coordinates.latitude, it.coordinates.longitude)
                 it.marker = mMap.addMarker(MarkerOptions().position(coordinates))
-            } ?: kotlin.run {
+            } ?: run {
                 val prefs = getPreferences(MODE_PRIVATE)
                 if (prefs.contains(LAT_KEY) && prefs.contains(LNG_KEY)) {
                     val coordinates = LatLng(
@@ -103,11 +109,27 @@ class MapsActivity : AppCompatActivity() {
         stopLocationUpdates()
     }
 
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        val inflater: MenuInflater = menuInflater
+        inflater.inflate(R.menu.top_menu, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.walking_directions -> {
+                navigateWithGoogleMaps()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
     private fun updateDistanceIndicator(location: Location?) {
         binding.distanceIndicator.text = location?.let {
             val distanceAndUnits = model.calculateDistanceAndUnits(location)
             distanceAndUnits?.let {
-                val roundDistance: Int = if (it.distance in 1.1..2.0) 2 else it.distance.roundToInt()
+                val roundDistance: Int = if (it.distance in 1.01..2.00 || it.distance in 0.01..1.00) 2 else it.distance.roundToInt()
                 when (it.units) {
                     UnitType.FEET -> resources.getQuantityString(
                         R.plurals.distance_from_pin_feet,
@@ -182,23 +204,22 @@ class MapsActivity : AppCompatActivity() {
             ))
             return
         }
-        fusedLocationClient.lastLocation
-            .addOnSuccessListener { location : Location? ->
-                location?.let {
-                    model.carLocation?.marker?.remove()
-                    val coordinates = LatLng(it.latitude, it.longitude)
-                    val marker = mMap.addMarker(MarkerOptions().position(coordinates))
-                    updateDistanceIndicator(it)
-                    centerOnLocation()
+        fusedLocationClient.lastLocation.addOnSuccessListener { location : Location? ->
+            location?.let {
+                model.carLocation?.marker?.remove()
+                val coordinates = LatLng(it.latitude, it.longitude)
+                val marker = mMap.addMarker(MarkerOptions().position(coordinates))
+                updateDistanceIndicator(it)
+                centerOnLocation()
 
-                    model.carLocation = CarLocation(marker, it, coordinates)
+                model.carLocation = CarLocation(marker, it, coordinates)
 
-                    val editor = getPreferences(MODE_PRIVATE).edit()
-                    editor.putLong(LAT_KEY, coordinates.latitude.toRawBits())
-                    editor.putLong(LNG_KEY, coordinates.longitude.toRawBits())
-                    editor.apply()
-                }
+                val editor = getPreferences(MODE_PRIVATE).edit()
+                editor.putLong(LAT_KEY, coordinates.latitude.toRawBits())
+                editor.putLong(LNG_KEY, coordinates.longitude.toRawBits())
+                editor.apply()
             }
+        }
     }
 
     private fun clearPins() {
@@ -235,6 +256,21 @@ class MapsActivity : AppCompatActivity() {
 
     private fun stopLocationUpdates() {
         fusedLocationClient.removeLocationUpdates(locationCallback)
+    }
+
+    private fun navigateWithGoogleMaps() {
+        model.carLocation?.coordinates?.let { destination ->
+            val ggmIntentUri =
+                Uri.parse("google.navigation:q=${destination.latitude},${destination.longitude}&mode=w")
+            val mapsIntent = Intent(Intent.ACTION_VIEW, ggmIntentUri)
+            mapsIntent.setPackage("com.google.android.apps.maps")
+
+            mapsIntent.resolveActivity(packageManager)?.let {
+                startActivity(mapsIntent)
+            }
+        } ?: run {
+            Toast.makeText(this, getString(R.string.navigate_to_empty), Toast.LENGTH_SHORT).show()
+        }
     }
 
     companion object {
