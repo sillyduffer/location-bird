@@ -4,6 +4,8 @@
     <string name="distance_placeholder">Save your parking spot to see your distance.</string>
     <string name="distance_error_message">Unable to calculate distance.</string>
     <string name="clear_my_spot">I\'m back, clear my spot.</string>
+    <string name="navigate_to_car">Navigate to Car</string>
+    <string name="navigate_to_empty">No parking spot saved</string>
     <plurals name="distance_from_pin_miles">
         <item quantity="one">You are parked <xliff:g id="distance" example="1">%1$s</xliff:g> mile away.</item>
         <item quantity="other">You are parked <xliff:g id="distance" example="4.3">%1$s</xliff:g> miles away.</item>

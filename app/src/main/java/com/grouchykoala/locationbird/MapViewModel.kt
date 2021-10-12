@@ -11,7 +11,6 @@ import java.math.RoundingMode
 class MapViewModel: ViewModel() {
     var carLocation: CarLocation? = null
     var requestingLocationUpdates = true
-    var currentApproximateLocation: Location? = null
 
     fun getLocationRequest(): LocationRequest {
         return LocationRequest.create().apply {

@@ -7,6 +7,10 @@ import android.location.Location
 import android.net.Uri
 import android.os.Bundle
 import android.os.Looper
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -65,7 +69,7 @@ class MapsActivity : AppCompatActivity() {
                 it.marker?.remove()
                 val coordinates = LatLng(it.coordinates.latitude, it.coordinates.longitude)
                 it.marker = mMap.addMarker(MarkerOptions().position(coordinates))
-            } ?: kotlin.run {
+            } ?: run {
                 val prefs = getPreferences(MODE_PRIVATE)
                 if (prefs.contains(LAT_KEY) && prefs.contains(LNG_KEY)) {
                     val coordinates = LatLng(
@@ -89,7 +93,6 @@ class MapsActivity : AppCompatActivity() {
 
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult?) {
-                model.currentApproximateLocation = locationResult?.lastLocation
                 updateDistanceIndicator(locationResult?.lastLocation)
             }
         }
@@ -104,6 +107,22 @@ class MapsActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         stopLocationUpdates()
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        val inflater: MenuInflater = menuInflater
+        inflater.inflate(R.menu.top_menu, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.walking_directions -> {
+                navigateWithGoogleMaps()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
     }
 
     private fun updateDistanceIndicator(location: Location?) {
@@ -239,16 +258,18 @@ class MapsActivity : AppCompatActivity() {
         fusedLocationClient.removeLocationUpdates(locationCallback)
     }
 
-    private fun showDrivingDirections() {
+    private fun navigateWithGoogleMaps() {
         model.carLocation?.coordinates?.let { destination ->
-            val uri: String = model.currentApproximateLocation?.let { currentLocation ->
-                ("http://maps.google.com/maps?saddr=" + currentLocation.latitude + ","
-                        + currentLocation.longitude + "&daddr=" + destination.latitude + ","
-                        + destination.longitude)
-            } ?: ("http://maps.google.com/maps?daddr=" + destination.latitude.toString() + ","
-                    + destination.longitude)
+            val ggmIntentUri =
+                Uri.parse("google.navigation:q=${destination.latitude},${destination.longitude}&mode=w")
+            val mapsIntent = Intent(Intent.ACTION_VIEW, ggmIntentUri)
+            mapsIntent.setPackage("com.google.android.apps.maps")
 
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(uri)))
+            mapsIntent.resolveActivity(packageManager)?.let {
+                startActivity(mapsIntent)
+            }
+        } ?: run {
+            Toast.makeText(this, getString(R.string.navigate_to_empty), Toast.LENGTH_SHORT).show()
         }
     }
 
