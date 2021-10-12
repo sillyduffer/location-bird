@@ -13,6 +13,7 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
@@ -38,6 +39,7 @@ class MapsActivity : AppCompatActivity() {
             model.requestingLocationUpdates = true
             startLocationUpdates()
             enableUserLocation()
+            centerOnLocation()
         } else {
             model.requestingLocationUpdates = false
         }
@@ -55,6 +57,7 @@ class MapsActivity : AppCompatActivity() {
         mapFragment.getMapAsync { googleMap ->
             mMap = googleMap
             enableUserLocation()
+            centerOnLocation()
 
             model.carLocation?.let {
                 it.marker?.remove()
@@ -80,23 +83,7 @@ class MapsActivity : AppCompatActivity() {
 
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult?) {
-                binding.distanceIndicator.text = locationResult ?.let { result ->
-                    val distanceAndUnits = model.calculateDistanceAndUnits(result.lastLocation)
-                    distanceAndUnits?.let {
-                        when (it.units) {
-                            UnitType.FEET -> resources.getQuantityString(
-                                R.plurals.distance_from_pin_feet,
-                                it.distance.roundToInt(),
-                                NumberFormat.getInstance().format(it.distance)
-                            )
-                            UnitType.MILES -> resources.getQuantityString(
-                                R.plurals.distance_from_pin_miles,
-                                it.distance.roundToInt(),
-                                NumberFormat.getInstance().format(it.distance)
-                            )
-                        }
-                    } ?: resources.getString(R.string.distance_placeholder)
-                } ?: resources.getString(R.string.distance_error_message)
+                updateDistanceIndicator(locationResult?.lastLocation)
             }
         }
 
@@ -110,6 +97,27 @@ class MapsActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         stopLocationUpdates()
+    }
+
+    private fun updateDistanceIndicator(location: Location?) {
+        binding.distanceIndicator.text = location?.let {
+            val distanceAndUnits = model.calculateDistanceAndUnits(location)
+            distanceAndUnits?.let {
+                val roundDistance: Int = if (it.distance in 1.1..2.0) 2 else it.distance.roundToInt()
+                when (it.units) {
+                    UnitType.FEET -> resources.getQuantityString(
+                        R.plurals.distance_from_pin_feet,
+                        roundDistance,
+                        NumberFormat.getInstance().format(it.distance)
+                    )
+                    UnitType.MILES -> resources.getQuantityString(
+                        R.plurals.distance_from_pin_miles,
+                        roundDistance,
+                        NumberFormat.getInstance().format(it.distance)
+                    )
+                }
+            } ?: resources.getString(R.string.distance_placeholder)
+        } ?: resources.getString(R.string.distance_error_message)
     }
 
     private fun enableUserLocation() {
@@ -128,6 +136,31 @@ class MapsActivity : AppCompatActivity() {
             return
         }
         mMap.isMyLocationEnabled = true
+    }
+
+    private fun centerOnLocation() {
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            locationPermissionRequest.launch(arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ))
+            return
+        }
+        fusedLocationClient.lastLocation
+            .addOnSuccessListener { location : Location? ->
+                location?.let {
+                    mMap.animateCamera(
+                        CameraUpdateFactory.newLatLngZoom(LatLng(it.latitude, it.longitude), 14F)
+                    )
+                }
+            }
     }
 
     private fun dropPinAtCurrentLocation() {
@@ -151,6 +184,7 @@ class MapsActivity : AppCompatActivity() {
                     model.carLocation?.marker?.remove()
                     val coordinates = LatLng(it.latitude, it.longitude)
                     val marker = mMap.addMarker(MarkerOptions().position(coordinates))
+                    updateDistanceIndicator(it)
 
                     model.carLocation = CarLocation(marker, it, coordinates)
 
