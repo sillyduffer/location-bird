@@ -1,6 +1,7 @@
 package com.grouchykoala.locationbird
 
 import android.Manifest
+import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
@@ -10,9 +11,11 @@ import android.os.Looper
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
+import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -24,6 +27,7 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.grouchykoala.locationbird.databinding.ActivityMapsBinding
 import java.text.NumberFormat
 import kotlin.math.roundToInt
@@ -39,15 +43,24 @@ class MapsActivity : AppCompatActivity() {
     private val locationPermissionRequest = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        if (permissions.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false)
-            || permissions.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false)
-        ) {
-            model.requestingLocationUpdates = true
-            startLocationUpdates()
-            enableUserLocation()
-            centerOnLocation()
-        } else {
-            model.requestingLocationUpdates = false
+        when {
+            permissions.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false) -> {
+                binding.distanceIndicator.visibility = View.VISIBLE
+                model.requestingLocationUpdates = true
+                startLocationUpdates()
+                enableUserLocation()
+                centerOnLocation()
+            }
+            permissions.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false) -> {
+                binding.distanceIndicator.visibility = View.GONE
+                model.requestingLocationUpdates = true
+                startLocationUpdates()
+                enableUserLocation()
+                centerOnLocation()
+            } else -> {
+                binding.distanceIndicator.visibility = View.GONE
+                model.requestingLocationUpdates = true
+            }
         }
     }
 
@@ -121,11 +134,34 @@ class MapsActivity : AppCompatActivity() {
                 navigateWithGoogleMaps()
                 true
             }
+            R.id.toggle_distance_indicator -> {
+                if (ActivityCompat.checkSelfPermission(
+                        this,
+                        Manifest.permission.ACCESS_FINE_LOCATION
+                    ) != PackageManager.PERMISSION_GRANTED) {
+                    Toast.makeText(this, getString(R.string.incorrect_permission_level), Toast.LENGTH_SHORT).show()
+                    locationPermissionRequest.launch(arrayOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                    ))
+                    return true
+                }
+
+                with(binding.distanceIndicator) {
+                    when(visibility) {
+                        View.VISIBLE -> visibility = View.GONE
+                        View.INVISIBLE -> visibility = View.VISIBLE
+                        View.GONE -> visibility = View.VISIBLE
+                    }
+                }
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
     }
 
     private fun updateDistanceIndicator(location: Location?) {
+        if (binding.distanceIndicator.visibility != View.VISIBLE) { return }
         binding.distanceIndicator.text = location?.let {
             val distanceAndUnits = model.calculateDistanceAndUnits(location)
             distanceAndUnits?.let {
@@ -193,16 +229,11 @@ class MapsActivity : AppCompatActivity() {
         if (ActivityCompat.checkSelfPermission(
                 this,
                 Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
+            ) != PackageManager.PERMISSION_GRANTED) {
             locationPermissionRequest.launch(arrayOf(
                 Manifest.permission.ACCESS_FINE_LOCATION,
                 Manifest.permission.ACCESS_COARSE_LOCATION
             ))
-            return
         }
         fusedLocationClient.lastLocation.addOnSuccessListener { location : Location? ->
             location?.let {
@@ -274,6 +305,7 @@ class MapsActivity : AppCompatActivity() {
     }
 
     companion object {
+        const val ASKED_FOR_UPGRADE_KEY = "upgrade key"
         const val LAT_KEY = "latitude key"
         const val LNG_KEY = "longitude key"
     }

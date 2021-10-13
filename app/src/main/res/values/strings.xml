@@ -6,6 +6,8 @@
     <string name="clear_my_spot">I\'m back, clear my spot.</string>
     <string name="navigate_to_car">Navigate to Car</string>
     <string name="navigate_to_empty">No parking spot saved</string>
+    <string name="toggle_distance_indicator">Toggle Distance Indicator</string>
+    <string name="incorrect_permission_level">Requires precise location permission</string>
     <plurals name="distance_from_pin_miles">
         <item quantity="one">You are parked <xliff:g id="distance" example="1">%1$s</xliff:g> mile away.</item>
         <item quantity="other">You are parked <xliff:g id="distance" example="4.3">%1$s</xliff:g> miles away.</item>
