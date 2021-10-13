@@ -43,20 +43,24 @@ class MapsActivity : AppCompatActivity() {
     private val locationPermissionRequest = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        if (permissions.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false)) {
-            binding.distanceIndicator.visibility = if (permissions.getOrDefault(
-                    Manifest.permission.ACCESS_FINE_LOCATION, false)
-            ) {
-                View.VISIBLE
-            } else {
-                View.GONE
+        when {
+            permissions.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false) -> {
+                binding.distanceIndicator.visibility = View.VISIBLE
+                model.requestingLocationUpdates = true
+                startLocationUpdates()
+                enableUserLocation()
+                centerOnLocation()
             }
-            model.requestingLocationUpdates = true
-            startLocationUpdates()
-            enableUserLocation()
-            centerOnLocation()
-        } else {
-            model.requestingLocationUpdates = false
+            permissions.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false) -> {
+                binding.distanceIndicator.visibility = View.GONE
+                model.requestingLocationUpdates = true
+                startLocationUpdates()
+                enableUserLocation()
+                centerOnLocation()
+            } else -> {
+                binding.distanceIndicator.visibility = View.GONE
+                model.requestingLocationUpdates = true
+            }
         }
     }
 
@@ -130,11 +134,34 @@ class MapsActivity : AppCompatActivity() {
                 navigateWithGoogleMaps()
                 true
             }
+            R.id.toggle_distance_indicator -> {
+                if (ActivityCompat.checkSelfPermission(
+                        this,
+                        Manifest.permission.ACCESS_FINE_LOCATION
+                    ) != PackageManager.PERMISSION_GRANTED) {
+                    Toast.makeText(this, getString(R.string.incorrect_permission_level), Toast.LENGTH_SHORT).show()
+                    locationPermissionRequest.launch(arrayOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                    ))
+                    return true
+                }
+
+                with(binding.distanceIndicator) {
+                    when(visibility) {
+                        View.VISIBLE -> visibility = View.GONE
+                        View.INVISIBLE -> visibility = View.VISIBLE
+                        View.GONE -> visibility = View.VISIBLE
+                    }
+                }
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
     }
 
     private fun updateDistanceIndicator(location: Location?) {
+        if (binding.distanceIndicator.visibility != View.VISIBLE) { return }
         binding.distanceIndicator.text = location?.let {
             val distanceAndUnits = model.calculateDistanceAndUnits(location)
             distanceAndUnits?.let {
@@ -203,19 +230,10 @@ class MapsActivity : AppCompatActivity() {
                 this,
                 Manifest.permission.ACCESS_FINE_LOCATION
             ) != PackageManager.PERMISSION_GRANTED) {
-                if (ActivityCompat.checkSelfPermission(
-                        this,
-                        Manifest.permission.ACCESS_COARSE_LOCATION
-                    ) != PackageManager.PERMISSION_GRANTED
-                    || !getPreferences(MODE_PRIVATE).getBoolean(ASKED_FOR_UPGRADE_KEY, false)) {
-                    locationPermissionRequest.launch(arrayOf(
-                        Manifest.permission.ACCESS_FINE_LOCATION,
-                        Manifest.permission.ACCESS_COARSE_LOCATION
-                    ))
-
-                    getPreferences(MODE_PRIVATE).edit().putBoolean(ASKED_FOR_UPGRADE_KEY, true).apply()
-                    return
-                }
+            locationPermissionRequest.launch(arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ))
         }
         fusedLocationClient.lastLocation.addOnSuccessListener { location : Location? ->
             location?.let {

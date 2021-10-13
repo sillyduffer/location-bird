@@ -6,4 +6,8 @@
         android:title="@string/navigate_to_car"
         app:showAsAction="ifRoom"
         />
+    <item android:id="@+id/toggle_distance_indicator"
+        android:title="@string/toggle_distance_indicator"
+        app:showAsAction="ifRoom"
+        />
 </menu>
