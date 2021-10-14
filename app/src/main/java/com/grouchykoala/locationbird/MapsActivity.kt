@@ -1,7 +1,6 @@
 package com.grouchykoala.locationbird
 
 import android.Manifest
-import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
@@ -15,7 +14,6 @@ import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -27,7 +25,6 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.grouchykoala.locationbird.databinding.ActivityMapsBinding
 import java.text.NumberFormat
 import kotlin.math.roundToInt
@@ -305,7 +302,6 @@ class MapsActivity : AppCompatActivity() {
     }
 
     companion object {
-        const val ASKED_FOR_UPGRADE_KEY = "upgrade key"
         const val LAT_KEY = "latitude key"
         const val LNG_KEY = "longitude key"
     }
