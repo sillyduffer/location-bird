@@ -42,20 +42,20 @@ class MapsActivity : AppCompatActivity() {
     ) { permissions ->
         when {
             permissions.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false) -> {
-                binding.distanceIndicator.visibility = View.VISIBLE
+                model.shouldShowDistanceIndicator.value = true
                 model.requestingLocationUpdates = true
                 startLocationUpdates()
                 enableUserLocation()
                 centerOnLocation()
             }
             permissions.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false) -> {
-                binding.distanceIndicator.visibility = View.GONE
+                model.shouldShowDistanceIndicator.value = false
                 model.requestingLocationUpdates = true
                 startLocationUpdates()
                 enableUserLocation()
                 centerOnLocation()
             } else -> {
-                binding.distanceIndicator.visibility = View.GONE
+                model.shouldShowDistanceIndicator.value = false
                 model.requestingLocationUpdates = true
             }
         }
@@ -98,6 +98,11 @@ class MapsActivity : AppCompatActivity() {
 
             binding.clearMarkerButton.setOnClickListener {
                 clearPins()
+            }
+
+            model.shouldShowDistanceIndicator.observe(this) {
+                binding.distanceIndicator.visibility = if (it) View.VISIBLE else View.GONE
+
             }
         }
 
@@ -143,13 +148,8 @@ class MapsActivity : AppCompatActivity() {
                     ))
                     return true
                 }
-
-                with(binding.distanceIndicator) {
-                    when(visibility) {
-                        View.VISIBLE -> visibility = View.GONE
-                        View.INVISIBLE -> visibility = View.VISIBLE
-                        View.GONE -> visibility = View.VISIBLE
-                    }
+                model.shouldShowDistanceIndicator.value?.let {
+                    model.shouldShowDistanceIndicator.value = !it
                 }
                 true
             }

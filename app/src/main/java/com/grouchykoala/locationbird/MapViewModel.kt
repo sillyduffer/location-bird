@@ -1,6 +1,7 @@
 package com.grouchykoala.locationbird
 
 import android.location.Location
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.maps.model.LatLng
@@ -11,6 +12,8 @@ import java.math.RoundingMode
 class MapViewModel: ViewModel() {
     var carLocation: CarLocation? = null
     var requestingLocationUpdates = true
+
+    val shouldShowDistanceIndicator: MutableLiveData<Boolean> = MutableLiveData(true)
 
     fun getLocationRequest(): LocationRequest {
         return LocationRequest.create().apply {
